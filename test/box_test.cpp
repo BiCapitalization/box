@@ -35,6 +35,32 @@ TEST_CASE("Constructors") {
         value_check(box);
         REQUIRE(box.get() == literal);
     }
+
+    SECTION("From raw pieces") {
+        int value = 5;
+        auto ptr = new int(value);
+
+        auto box = ben::from_raw(ptr);
+
+        value_check(box);
+        REQUIRE(box.get() == value);
+    }
+}
+
+TEST_CASE("Accessors") {
+    int value = 5;
+    auto box = ben::box(value);
+
+    value_check(box);
+    REQUIRE(box.get() == value);
+    REQUIRE(*box == value);
+    
+    auto opt_val = box.safe_get();
+    REQUIRE(opt_val.has_value());
+    REQUIRE(*opt_val == value);
+
+    auto empty_box = ben::box<int>();
+    REQUIRE(!empty_box.safe_get().has_value());
 }
 
 TEST_CASE("Modifiers") {

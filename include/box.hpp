@@ -1,7 +1,9 @@
 #ifndef BEN_BOX_HPP
 #define BEN_BOX_HPP
 
+#include <functional>
 #include <memory>
+#include <optional>
 #include <utility>
 
 namespace ben {
@@ -34,12 +36,15 @@ namespace ben {
         using const_reference = T const&;
         using pointer = typename m_traits::pointer;
         using const_pointer = typename m_traits::const_pointer;
-        using iterator = pointer;
-        using const_iterator = const_pointer;
+        using iterator = T*;
+        using const_iterator = T const*;
 
         private:
         pointer m_ptr = nullptr;
         allocator_type m_alloc;
+
+        explicit box(pointer ptr, allocator_type const& alloc)
+            : m_ptr(ptr), m_alloc(alloc) {}
 
         template <typename... Args>
         void make_heap_value(Args&&... args) {
@@ -60,6 +65,9 @@ namespace ben {
                 make_heap_value(std::forward<Args>(args)...);
             }
         }
+
+        template <typename U> 
+        friend auto from_raw(U* ptr) -> box<U>; 
 
         public:
         box() {}
@@ -83,6 +91,30 @@ namespace ben {
 
         auto get() const -> const_reference {
             return *m_ptr;
+        }
+
+        auto operator*() -> reference {
+            return get();
+        }
+
+        auto operator*() const -> const_reference {
+            return get();
+        }
+
+        auto safe_get() -> std::optional<std::reference_wrapper<value_type>> {
+            if (m_ptr == nullptr) {
+                return std::nullopt;
+            }
+
+            return get();
+        }
+
+        auto safe_get() const -> std::optional<std::reference_wrapper<value_type const>> {
+            if (m_ptr == nullptr) {
+                return std::nullopt;
+            }
+
+            return get();
         }
 
         auto has_value() const -> bool {
@@ -140,6 +172,11 @@ namespace ben {
             return end();
         }
     };
+
+    template <typename U> 
+    auto from_raw(U* ptr) -> box<U> {
+       return box<U>(ptr, std::allocator<U>()); 
+    }
 }
 
 #endif // BEN_BOX_HPP
