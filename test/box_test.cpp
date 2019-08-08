@@ -70,3 +70,17 @@ TEST_CASE("Modifiers") {
         REQUIRE(box.get() == std::string(literal_2));
     }
 }
+
+TEST_CASE("Iterators") {
+    auto empty_box = ben::box<int>();
+
+    REQUIRE(empty_box.begin() == empty_box.end());
+    REQUIRE(empty_box.cbegin() == empty_box.cend());
+
+    auto box = ben::box(5);
+
+    REQUIRE(box.begin() < box.end());
+    REQUIRE(box.cbegin() < box.cend());
+    REQUIRE(box.begin() + 1 == box.end());
+    REQUIRE(box.cbegin() + 1 == box.cend());
+}

@@ -34,12 +34,8 @@ namespace ben {
         using const_reference = T const&;
         using pointer = typename m_traits::pointer;
         using const_pointer = typename m_traits::const_pointer;
-        /* TODO
-        using iterator = ;
-        using const_iterator = ;
-        using reverse_iterator = ;
-        using const_reverse_iterator = ;
-        */
+        using iterator = pointer;
+        using const_iterator = const_pointer;
 
         private:
         pointer m_ptr = nullptr;
@@ -108,6 +104,40 @@ namespace ben {
 
         void push(T&& val) {
             replace_heap_value(std::move(val));
+        }
+
+        auto begin() -> iterator {
+            return detail::to_address(m_ptr);
+        }
+
+        auto begin() const -> const_iterator {
+            return detail::to_address(m_ptr);
+        }
+
+        auto end() -> iterator {
+            auto address = detail::to_address(m_ptr);
+            if (address == nullptr) {
+                return nullptr;
+            }
+
+            return address + 1;
+        }
+
+        auto end() const -> const_iterator {
+            auto address = detail::to_address(m_ptr);
+            if (address == nullptr) {
+                return nullptr;
+            }
+
+            return address + 1;
+        }
+
+        auto cbegin() const -> const_iterator {
+            return begin();
+        }
+
+        auto cend() const -> const_iterator {
+            return end();
         }
     };
 }
