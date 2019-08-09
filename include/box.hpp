@@ -85,36 +85,36 @@ namespace ben {
             return m_alloc;
         }
 
-        auto get() -> reference {
+        auto value() -> reference {
             return *m_ptr;
         }
 
-        auto get() const -> const_reference {
+        auto value() const -> const_reference {
             return *m_ptr;
         }
 
         auto operator*() -> reference {
-            return get();
+            return value();
         }
 
         auto operator*() const -> const_reference {
-            return get();
+            return value();
         }
 
-        auto safe_get() -> std::optional<std::reference_wrapper<value_type>> {
+        auto safe_value() -> std::optional<std::reference_wrapper<value_type>> {
             if (m_ptr == nullptr) {
                 return std::nullopt;
             }
 
-            return get();
+            return value();
         }
 
-        auto safe_get() const -> std::optional<std::reference_wrapper<value_type const>> {
+        auto safe_value() const -> std::optional<std::reference_wrapper<value_type const>> {
             if (m_ptr == nullptr) {
                 return std::nullopt;
             }
 
-            return get();
+            return value();
         }
 
         auto has_value() const -> bool {

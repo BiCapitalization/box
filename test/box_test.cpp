@@ -25,7 +25,7 @@ TEST_CASE("Constructors") {
         auto box = ben::box(value);
 
         value_check(box);
-        REQUIRE(box.get() == value);
+        REQUIRE(box.value() == value);
     }
 
     SECTION("Element constructors - move") {
@@ -33,7 +33,7 @@ TEST_CASE("Constructors") {
         auto box = ben::box(std::move(value));
 
         value_check(box);
-        REQUIRE(box.get() == literal);
+        REQUIRE(box.value() == literal);
     }
 
     SECTION("From raw pieces") {
@@ -43,7 +43,7 @@ TEST_CASE("Constructors") {
         auto box = ben::from_raw(ptr);
 
         value_check(box);
-        REQUIRE(box.get() == value);
+        REQUIRE(box.value() == value);
     }
 }
 
@@ -52,15 +52,15 @@ TEST_CASE("Accessors") {
     auto box = ben::box(value);
 
     value_check(box);
-    REQUIRE(box.get() == value);
+    REQUIRE(box.value() == value);
     REQUIRE(*box == value);
     
-    auto opt_val = box.safe_get();
+    auto opt_val = box.safe_value();
     REQUIRE(opt_val.has_value());
     REQUIRE(*opt_val == value);
 
     auto empty_box = ben::box<int>();
-    REQUIRE(!empty_box.safe_get().has_value());
+    REQUIRE(!empty_box.safe_value().has_value());
 }
 
 TEST_CASE("Modifiers") {
@@ -72,12 +72,12 @@ TEST_CASE("Modifiers") {
         box.push(value);
 
         value_check(box);
-        REQUIRE(box.get() == value);
+        REQUIRE(box.value() == value);
 
         box.push(value_2);
 
         value_check(box);
-        REQUIRE(box.get() == value_2);
+        REQUIRE(box.value() == value_2);
     }
 
     SECTION("emplace") {
@@ -88,12 +88,12 @@ TEST_CASE("Modifiers") {
         box.emplace(literal);
 
         value_check(box);
-        REQUIRE(box.get() == std::string(literal));
+        REQUIRE(box.value() == std::string(literal));
 
         box.emplace(literal_2);
         
         value_check(box);
-        REQUIRE(box.get() == std::string(literal_2));
+        REQUIRE(box.value() == std::string(literal_2));
     }
 }
 
