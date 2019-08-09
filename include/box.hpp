@@ -41,16 +41,18 @@ namespace ben {
 
         private:
         pointer m_ptr = nullptr;
+        bool m_has_value = false;
         allocator_type m_alloc;
 
         explicit box(pointer ptr, allocator_type const& alloc)
-            : m_ptr(ptr), m_alloc(alloc) {}
+            : m_ptr(ptr), m_alloc(alloc), m_has_value(true) {}
 
         template <typename... Args>
         void make_heap_value(Args&&... args) {
             auto ptr = m_traits::allocate(m_alloc, 1);
             m_traits::construct(m_alloc, detail::to_address(ptr), std::forward<Args>(args)...);
             m_ptr = ptr;
+            m_has_value = true;
         } 
 
         template <typename... Args>
@@ -102,27 +104,27 @@ namespace ben {
         }
 
         auto safe_value() -> std::optional<std::reference_wrapper<value_type>> {
-            if (m_ptr == nullptr) {
-                return std::nullopt;
+            if (m_has_value) {
+                return value();
             }
 
-            return value();
+            return std::nullopt;
         }
 
         auto safe_value() const -> std::optional<std::reference_wrapper<value_type const>> {
-            if (m_ptr == nullptr) {
-                return std::nullopt;
+            if (m_has_value) {
+                return value();
             }
 
-            return value();
+            return std::nullopt;
         }
 
         auto has_value() const -> bool {
-            return m_ptr != nullptr;
+            return m_has_value;
         }
 
         auto size() const -> size_type {
-            return m_ptr == nullptr ? 0 : 1;
+            return m_has_value ? 1 : 0;
         }
 
         template <typename... Args>
@@ -138,30 +140,45 @@ namespace ben {
             replace_heap_value(std::move(val));
         }
 
+        void erase() {
+            if (!m_has_value) {
+                return;
+            }
+
+            m_traits::destroy(m_alloc, detail::to_address(m_ptr));
+            m_has_value = false;
+        }
+
         auto begin() -> iterator {
+            if (!m_has_value) {
+                return nullptr;
+            }
+
             return detail::to_address(m_ptr);
         }
 
         auto begin() const -> const_iterator {
+            if (!m_has_value) {
+                return nullptr;
+            }
+
             return detail::to_address(m_ptr);
         }
 
         auto end() -> iterator {
-            auto address = detail::to_address(m_ptr);
-            if (address == nullptr) {
+            if (!m_has_value) {
                 return nullptr;
             }
-
-            return address + 1;
+            
+            return detail::to_address(m_ptr) + 1;
         }
 
         auto end() const -> const_iterator {
-            auto address = detail::to_address(m_ptr);
-            if (address == nullptr) {
+            if (!m_has_value) {
                 return nullptr;
             }
-
-            return address + 1;
+            
+            return detail::to_address(m_ptr) + 1;
         }
 
         auto cbegin() const -> const_iterator {

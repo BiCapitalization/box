@@ -95,6 +95,17 @@ TEST_CASE("Modifiers") {
         value_check(box);
         REQUIRE(box.value() == std::string(literal_2));
     }
+
+    SECTION("erase") {
+        auto box = ben::box(5);
+        
+        value_check(box);
+        
+        box.erase();
+
+        REQUIRE(!box.has_value());
+        REQUIRE(box.size() == 0);
+    }
 }
 
 TEST_CASE("Iterators") {
