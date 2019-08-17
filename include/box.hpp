@@ -23,6 +23,12 @@ namespace ben {
     }
 
     template <typename T, typename Allocator = std::allocator<T>>
+    class box; 
+
+    template <typename T, typename Allocator>
+    void swap(box<T, Allocator>& a, box<T, Allocator>& b); 
+
+    template <typename T, typename Allocator>
     class box {
         private: 
         using m_traits = std::allocator_traits<Allocator>;
@@ -59,17 +65,34 @@ namespace ben {
         void replace_heap_value(Args&&... args) {
 
             if (m_ptr != nullptr) {
-                auto address = detail::to_address(m_ptr);
+                if (m_has_value) {
+                    value() = value_type(std::forward<Args>(args)...);
+                } else {
+                    m_traits::construct(m_alloc, detail::to_address(m_ptr), std::forward<Args>(args)...);
+                    m_has_value = true;
+                }
 
-                m_traits::destroy(m_alloc, address);
-                m_traits::construct(m_alloc, address, std::forward<Args>(args)...);
             } else {
                 make_heap_value(std::forward<Args>(args)...);
             }
         }
 
+        void memory_cleanup() {
+            if (m_ptr != nullptr) {
+                m_traits::deallocate(m_alloc, detail::to_address(m_ptr), 1);
+                m_ptr = nullptr;
+            }
+        }
+
+        void full_cleanup() {
+            erase();
+            memory_cleanup();
+        }
+
         template <typename U> 
         friend auto from_raw(U* ptr) -> box<U>; 
+
+        friend void swap<T, Allocator>(box<T, Allocator>& a, box<T, Allocator>& b);
 
         public:
         box() {}
@@ -81,6 +104,70 @@ namespace ben {
 
         explicit box(T&& element, allocator_type const& alloc = Allocator()) : m_alloc(alloc) {
             make_heap_value(std::move(element));
+        }
+
+        box(box const& other)
+            : m_alloc(m_traits::select_on_container_copy_construction(other.m_alloc)) { 
+
+            if (other.m_has_value) {
+                make_heap_value(other.value());
+            }
+        }
+
+        box(box&& other) {
+            swap(*this, other);
+        }
+
+        ~box() {
+            erase();
+
+            if (m_ptr != nullptr) {
+                m_traits::deallocate(m_alloc, detail::to_address(m_ptr), 1);
+            }
+        }
+
+        auto operator=(box const& other) -> box& {
+            if (m_traits::propagate_on_container_copy_assignment::value || m_alloc != other.m_alloc) {
+                memory_cleanup();
+
+                m_alloc = other.m_alloc;
+                if (other.has_value()) {
+                    make_heap_value(other.value());
+                }
+            } else {
+                if (other.has_value()) {
+                    replace_heap_value(other.value());
+                } else {
+                    erase();
+                }
+            }
+
+            return *this;
+        }
+
+        auto operator=(box&& other) -> box& {
+            using std::swap;
+
+            if (m_traits::is_always_equal::value || m_alloc == other.m_alloc) {
+                full_cleanup();
+
+                swap(m_ptr, other.m_ptr);
+                swap(m_has_value, other.m_has_value);
+            } else if constexpr (m_traits::propagate_on_container_move_assignment::value) {
+                full_cleanup();
+
+                swap(m_ptr, other.m_ptr);
+                swap(m_has_value, other.m_has_value);
+                m_alloc = std::move(other.m_alloc);
+            } else {
+                if (other.has_value()) {
+                    replace_heap_value(std::move(other.value()));
+                } else {
+                    erase();
+                }
+            }
+
+            return *this;
         }
 
         auto get_allocator() const -> allocator_type {
@@ -193,6 +280,18 @@ namespace ben {
     template <typename U> 
     auto from_raw(U* ptr) -> box<U> {
        return box<U>(ptr, std::allocator<U>()); 
+    }
+
+    template <typename T, typename Allocator>
+    void swap(box<T, Allocator>& a, box<T, Allocator>& b) {
+        using std::swap;
+
+        if constexpr (std::allocator_traits<Allocator>::propagate_on_container_swap::value) {
+            swap(a.m_alloc, b.m_alloc);
+        }
+
+        swap(a.m_ptr, b.m_ptr);
+        swap(a.m_has_value, b.m_has_value);
     }
 }
 

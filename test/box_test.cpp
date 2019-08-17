@@ -3,6 +3,7 @@
 
 #include <string_view>
 #include <string>
+#include <utility>
 
 template <typename T>
 static void value_check(ben::box<T> const& box) {
@@ -19,6 +20,34 @@ TEST_CASE("Constructors") {
     }
 
     auto literal = std::string_view("Hello there, friend!");
+
+    SECTION("Copy construction") {
+        auto box = ben::box<int>();
+        auto cpy = box;
+
+        REQUIRE(!cpy.has_value());
+        REQUIRE(cpy.size() == 0);
+
+        auto box_2 = ben::box(5);
+        auto cpy_2 = box_2;
+
+        value_check(cpy_2);
+        REQUIRE(cpy_2.value() == box_2.value());
+    }
+
+    SECTION("Move construction") {
+        auto box = ben::box<int>();
+        auto other = std::move(box);
+
+        REQUIRE(!other.has_value());
+        REQUIRE(other.size() == 0);
+
+        auto box_2 = ben::box(5);
+        auto other_2 = std::move(box_2);
+
+        value_check(other_2);
+        REQUIRE(other_2.value() == 5);
+    }
 
     SECTION("Element constructors - copy") {
         auto value = std::string(literal);
@@ -44,6 +73,29 @@ TEST_CASE("Constructors") {
 
         value_check(box);
         REQUIRE(box.value() == value);
+    }
+}
+
+TEST_CASE("Assignment operators") {
+    int value = 5;
+    auto box = ben::box<int>();
+    auto box_2 = ben::box(value);
+
+    SECTION("Copy assignment") {
+        box = box_2;
+
+        value_check(box);
+        value_check(box_2);
+        REQUIRE(box.value() == box_2.value());
+    }
+
+    SECTION("Move assignment") {
+        box = std::move(box_2);
+
+        value_check(box);
+        REQUIRE(box.value() == value);
+
+        REQUIRE(!box_2.has_value());
     }
 }
 
